@@ -1,0 +1,7 @@
+List of hardware being used
+
+microcontroller -- STM32F103C8T6 - Blue Pill
+IDE - Arduino IDE
+Position sensor - AS5147P - AMS
+H bridge - L298N Motor Driver Module
+DC motor - Linix 55ZY24-25
