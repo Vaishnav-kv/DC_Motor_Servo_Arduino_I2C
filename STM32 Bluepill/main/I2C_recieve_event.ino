@@ -1,7 +1,22 @@
+// Function that executes whenever data is received from master
 void receiveEvent(int howMany) {
-  while (Wire.available() > 0) { // loop through all bytes received
-    int received_byte;
-    Wire.readBytes((uint8_t*)&received_byte, sizeof(received_byte)); // read received byte as integer
-    target = received_byte / 100.00; // Convert integer to float angle with two decimal places
+  byte floatBytes[4];
+  while (Wire.available() > 0) {  // Loop through all bytes received
+    for (int i = 0; i < 4; i++) {
+      floatBytes[i] = Wire.read();  // Read received bytes
+    }
   }
+  target_theta = bytesToFloat(floatBytes);  // Reconstruct float from bytes
+}
+
+// Function to reconstruct a float value from its binary representation using IEEE 754 format
+float bytesToFloat(byte* bytes) {
+  union {
+    float floatVal;
+    byte byteVal[4];
+  } converter;
+  for (int i = 0; i < 4; i++) {
+    converter.byteVal[i] = bytes[i];
+  }
+  return converter.floatVal;
 }

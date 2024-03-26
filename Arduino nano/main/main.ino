@@ -9,7 +9,7 @@
 #define IN1 8             //  is pwm capable //pin is 5v tolerant
 #define IN2 7             //  is pwm capable //pin is 5v tolerant
 /////////MAG-ENCODER_SETUP////////
-#define AS5047P_CHIP_SELECT_PORT 10  //pin is not 5v tolerant
+#define AS5047P_CHIP_SELECT_PORT 10  //pin is 5v tolerant
 #define AS5047P_CUSTOM_SPI_BUS_SPEED 100000
 AS5047P as5047p(AS5047P_CHIP_SELECT_PORT, AS5047P_CUSTOM_SPI_BUS_SPEED);
 // SCLK-PA5,MISO-PA6,MOSI-PA7
@@ -21,7 +21,7 @@ long prevT = 0;
 float eprev = 0;
 float eintegral = 0;
 // PID constants
-float kp = 3.5;
+float kp = 20;
 float kd = 0;
 float ki = 1;
 //////////////////////////
@@ -57,7 +57,7 @@ void loop() {
     target_theta = inputString.toFloat();
 
     // Validate the input (optional)
-    if (target_theta < 0.0 || target_theta > 360.0) {
+    if (target_theta < 45.0 || target_theta > 315.0) {
       //Serial.println("Invalid input: Target theta must be between 0 and 360.");
       // Optionally, set target_theta back to a default value here
     } else {
@@ -68,7 +68,7 @@ void loop() {
   serial_debug();
   // set target position
   // target_theta = 180;  // manually set target
-  target_theta = 180 * sin(prevT / 1e6) + 180;
+   target_theta = 135 * sin(prevT / 1e6) + 180;
   // target_theta = fmod(250 * sin(prevT / 1e6) + 250, 360);
 
 

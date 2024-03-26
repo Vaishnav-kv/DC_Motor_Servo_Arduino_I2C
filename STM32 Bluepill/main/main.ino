@@ -6,9 +6,8 @@
 //PIN DEFINITIONS//
 #define LED_PIN LED_BUILTIN  //PC13//
 #define HB_PWM_EN PA8        // is pwm capable //pin is 5v tolerant
-//HardwareTimer timer(1);
-#define IN1 PA14             // is not pwm capable  //pin is 5v tolerant
-#define IN2 PA15             // is not pwm capable  //pin is 5v tolerant
+#define IN1 PB14             // is not pwm capable  //pin is 5v tolerant
+#define IN2 PB15             // is not pwm capable  //pin is 5v tolerant
 /////////MAG-ENCODER_SETUP////////
 #define AS5047P_CHIP_SELECT_PORT PA4  //pin is not 5v tolerant
 #define AS5047P_CUSTOM_SPI_BUS_SPEED 100000
@@ -16,21 +15,28 @@ AS5047P as5047p(AS5047P_CHIP_SELECT_PORT, AS5047P_CUSTOM_SPI_BUS_SPEED);
 // SCLK-PA5,MISO-PA6,MOSI-PA7
 //////////////////////////////////
 /////////VARIABLES////////
-float target;  // idk if it need to be refreshed to "0"
+float target_theta;  // idk if it need to be refreshed to "0"
+float pos;         // idk if it need to be refreshed to "0"
 long prevT = 0;
 float eprev = 0;
 float eintegral = 0;
+float pwr;
+// PID constants
+float kp = 1;
+float kd = 1;
+float ki = 1;
 //////////////////////////
 void setup() {
   pinMode(LED_PIN, OUTPUT);
   pinMode(HB_PWM_EN, OUTPUT);
   pinMode(IN1, OUTPUT);
   pinMode(IN2, OUTPUT);
-
+  analogWriteResolution (16); // sets 16 bit PWM (0-65535)
   Serial.begin(9600);
-/////////I2C_SETUP////////
-#define I2C_DEV_ADDR 0x55  //id as per requirment
-  Wire.begin();
+  /////////I2C_SETUP////////
+  //#define I2C_DEV_ADDR 8  //id as per requirment
+  //Wire.begin(8);
+  //Wire.onReceive(receiveEvent);  // register event,target is recived via i2c
   //SDA-PB7,SCL-PB6
 
   // initialize the AS5047P sensor and hold if sensor can't be initialized.
@@ -42,16 +48,33 @@ void setup() {
 }
 
 void loop() {
+  /////////////////////////////////////
+  // Check for incoming serial data
+  if (Serial.available() > 0) {
+    // Read the incoming value as a string
+    String inputString = Serial.readStringUntil('\n');
 
+    // Convert the string to a float
+    target_theta = inputString.toFloat();
+
+    // Validate the input (optional)
+    if (target_theta < 0.0 || target_theta > 360.0) {
+      //Serial.println("Invalid input: Target theta must be between 0 and 360.");
+      // Optionally, set target_theta back to a default value here
+    } else {
+      //Serial.print("Target theta updated to: ");
+      //Serial.println(target_theta);
+    }
+  }
+  serial_debug();
   // set target position
-  Wire.onReceive(receiveEvent);  // register event,target is recived via i2c
-  //int target = 1200;  // manually set target
-  //int target = 250 * sin(prevT / 1e6);
-  Serial.println(target);
-  // PID constants
-  float kp = 1;
-  float kd = 1;
-  float ki = 1;
+  // target_theta = 180;  // manually set target
+  target_theta = 135 * sin(prevT / 1e6) + 180;
+  // target_theta = fmod(250 * sin(prevT / 1e6) + 250, 360);
+  // set target position
+  //////////////////////////////////////
+
+
 
   // time difference
   long currT = micros();
@@ -59,14 +82,12 @@ void loop() {
   prevT = currT;
 
   // Read the position
-  int pos;         // idk if it need to be refreshed to "0"
   noInterrupts();  // disable interrupts temporarily while reading
   pos = as5047p.readAngleDegree();
-  Serial.println(pos);
   interrupts();  // turn interrupts back on
 
   // error
-  int e = pos - target;
+  int e = pos - target_theta;
 
   // derivative
   float dedt = (e - eprev) / (deltaT);
@@ -79,9 +100,9 @@ void loop() {
 
 
   // motor power
-  float pwr = fabs(u);
-  if (pwr > 255) {
-    pwr = 255;
+  pwr = fabs(u);
+  if (pwr > 65535) {
+    pwr = 65535;
   }
 
   // motor direction
@@ -96,4 +117,14 @@ void loop() {
 
   // store previous error
   eprev = e;
+}
+
+void serial_debug() {
+  Serial.print("target_theta: ");
+  Serial.print(target_theta);
+  Serial.print(", Current_theta: ");
+  Serial.print(pos);
+  Serial.print(", PWM_val: ");
+  Serial.println(pwr);
+  //delay(10); // Delay between debug updates
 }

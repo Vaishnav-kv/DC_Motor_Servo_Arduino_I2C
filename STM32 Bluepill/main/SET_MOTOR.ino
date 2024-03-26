@@ -11,5 +11,6 @@ void setMotor(int dir, int pwmVal, int pwm, int in1, int in2) {
   else {
     digitalWrite(in1, LOW);
     digitalWrite(in2, LOW);
+    digitalWrite(LED_PIN, HIGH);
   }
 }
